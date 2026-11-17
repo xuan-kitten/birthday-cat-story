@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1726" />
+<title>重生之我穿越到了一只小猫身上</title>
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/moods.css" />
+</head>
+<body data-mode="play">
+<div class="app" id="app">
+
+  <!-- ==================== 顶栏 ==================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">🐾</span>
+      <div class="brand-text">
+        <strong id="storyTitle">重生之我穿越到了一只小猫身上</strong>
+        <span class="save-tip" id="saveTip">已就绪</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" id="btnMode" type="button">✎ 编辑模式</button>
+    </div>
+  </header>
+
+  <!-- ==================== 播放舞台 ==================== -->
+  <main class="stage" id="stage" data-mood="daily">
+    <!-- 四种氛围层，靠 opacity 交叉淡入，不闪白 -->
+    <div class="mood-layer" data-mood="mystery"></div>
+    <div class="mood-layer" data-mood="tracking"></div>
+    <div class="mood-layer" data-mood="daily"></div>
+    <div class="mood-layer" data-mood="warm"></div>
+
+    <!-- 背景照片双缓冲（铺满舞台，mood 调色叠在上面） -->
+    <div class="bg-layers">
+      <div class="bg-layer" id="bgLayerA"></div>
+      <div class="bg-layer" id="bgLayerB"></div>
+    </div>
+
+    <!-- 图片双缓冲 -->
+    <div class="img-layers">
+      <div class="img-layer" id="imgLayerA"></div>
+      <div class="img-layer" id="imgLayerB"></div>
+    </div>
+
+    <!-- 暗角 / 噪点 / 氛围染色层：压在照片和猫图之上 -->
+    <div class="atmo-layer" data-mood="mystery"></div>
+    <div class="atmo-layer" data-mood="tracking"></div>
+    <div class="atmo-layer" data-mood="daily"></div>
+    <div class="atmo-layer" data-mood="warm"></div>
+
+    <!-- 烛光层 -->
+    <div class="glow-layer" id="glowLayer">
+      <div class="cake" aria-hidden="true">
+        <svg class="cake-svg" viewBox="0 0 140 132" fill="none">
+          <path d="M27 78c-4 17-2 31 6 39 11 10 64 11 76-1 8-8 8-24 4-38"
+                stroke="#f6c98a" stroke-width="3" stroke-linecap="round" />
+          <path d="M26 79c9 9 25 12 45 12s35-4 44-12"
+                stroke="#f6c98a" stroke-width="3" stroke-linecap="round" />
+          <path d="M34 76c1-9-2-17 7-23 6-4 13-1 15 4 3-8 13-10 18-4 4 5 3 11 2 16 7-3 13 0 13 8"
+                stroke="#f6c98a" stroke-width="3" stroke-linecap="round" />
+          <path d="M70 51V33" stroke="#f6c98a" stroke-width="3" stroke-linecap="round" />
+          <path class="flame" d="M70 30c5-6 4-12 0-17-6 5-6 12 0 17z" fill="#ffb45e" />
+          <path d="M52 106c8 3 28 3 36-1" stroke="#f6c98a" stroke-width="2.4" stroke-linecap="round" opacity=".7" />
+          <path d="M46 92c3-4 8-4 10 0 2-4 7-4 9 0" stroke="#9ee6a1" stroke-width="2.2" stroke-linecap="round" />
+          <path d="M78 90c3-4 8-4 10 0 2-4 7-4 9 0" stroke="#9ee6a1" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="stage-inner">
+      <!-- 选角节点的选项独立浮在画面中央，避免挡住背景构图 -->
+      <div class="select-choices" id="selectChoices"></div>
+
+      <div class="dialog-row">
+        <!-- 配角立绘：说话人在左侧 -->
+        <div class="speaker-portrait is-left" id="portraitLeft" hidden>
+          <img alt="" hidden />
+          <span class="portrait-fallback"></span>
+        </div>
+
+        <div class="textbox" id="textbox">
+          <p class="story-text" id="storyText"></p>
+          <div class="choices" id="choices"></div>
+          <div class="hint" id="clickHint"></div>
+        </div>
+
+        <!-- 玩家立绘：我在右侧 -->
+        <div class="speaker-portrait is-right" id="portraitRight" hidden>
+          <img alt="" hidden />
+          <span class="portrait-fallback"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== 编辑模式 ==================== -->
+  <div class="editor" id="editor" hidden>
+    <!-- 左：节点列表 -->
+    <aside class="ed-side">
+      <div class="ed-side-head">
+        <span>剧情节点</span>
+        <span class="count" id="nodeCount">0</span>
+      </div>
+      <div class="node-list" id="nodeList"></div>
+      <div class="ed-side-foot">
+        <button class="btn btn-small" id="btnAddNode" type="button">＋ 新增节点</button>
+        <button class="btn btn-small" id="btnValidate" type="button">检查配置</button>
+      </div>
+      <div class="ed-side-foot col">
+        <button class="btn btn-small" id="btnExportFull" type="button">导出完整包（含图片）</button>
+        <button class="btn btn-small" id="btnExportConfig" type="button">导出纯配置</button>
+        <button class="btn btn-small" id="btnImport" type="button">导入 JSON</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </div>
+    </aside>
+
+    <!-- 中：可视化舞台 -->
+    <section class="ed-main">
+      <div class="ed-toolbar">
+        <span class="ed-current" id="edCurrent">未选择节点</span>
+        <button class="btn btn-small" id="btnPreviewNode" type="button">▶ 从此处试玩</button>
+      </div>
+      <div class="ed-stage" id="edStage" data-mood="daily">
+        <div class="mood-layer" data-mood="mystery"></div>
+        <div class="mood-layer" data-mood="tracking"></div>
+        <div class="mood-layer" data-mood="daily"></div>
+        <div class="mood-layer" data-mood="warm"></div>
+
+        <div class="bg-layers">
+          <div class="bg-layer" id="edBgLayerA"></div>
+          <div class="bg-layer" id="edBgLayerB"></div>
+        </div>
+
+        <div class="ed-img-layer">
+          <div class="img-holder" id="edHolder">
+            <img id="edImg" alt="" hidden />
+            <div class="img-missing" id="edMissing" hidden>
+              <span class="missing-tag">🖼</span>
+              <span class="missing-name"></span>
+              <span class="missing-tip">把这张图拖进来，或放到 assets/ 文件夹</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="atmo-layer" data-mood="mystery"></div>
+        <div class="atmo-layer" data-mood="tracking"></div>
+        <div class="atmo-layer" data-mood="daily"></div>
+        <div class="atmo-layer" data-mood="warm"></div>
+
+        <div class="ed-stage-caption" id="edCaption"></div>
+        <div class="ed-drop-hint">把 GIF / PNG / JPG 拖到这里 → 绑定当前节点</div>
+      </div>
+      <input type="file" id="assetFile" accept="image/*" multiple hidden />
+    </section>
+
+    <!-- 右：属性面板 -->
+    <aside class="ed-props" id="edProps"></aside>
+  </div>
+
+  <!-- 图片选择弹层（选项配图等） -->
+  <div class="modal" id="imgPicker" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>选择图片</strong>
+        <button class="icon-btn" id="imgPickerClose" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body" id="imgPickerBody"></div>
+      <div class="modal-foot">
+        <button class="btn btn-small" id="imgPickerUpload" type="button">上传新图片</button>
+        <button class="btn btn-small" id="imgPickerClear" type="button">不用图片</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻提示 -->
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/model.js"></script>
+<script src="js/moods.js"></script>
+<script src="js/player.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
