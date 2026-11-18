@@ -27,6 +27,7 @@
   let lastBg = null;
   let selectState = null;   // 选角轮播状态
   const portraitCache = new Map();  // 头像文件探测缓存
+  const preloadedImages = new Set(); // 已预加载的图片
   const NPC_PORTRAITS = {
     '小白': ['opt/xiaobai.webp', '小白.png', '小白.jpg', '小白.jpeg', '小白.gif', 'xiaobai.png', 'xiaobai.jpg'],
     '小黑': ['opt/xiaohei.webp', '小黑.png', '小黑.jpg', '小黑.jpeg', '小黑.gif', 'xiaohei.png', 'xiaohei.jpg']
@@ -99,6 +100,52 @@
     els.hint.classList.remove('is-pulse');
 
     typeText(BS.model.renderText(node.text, vars));
+
+    // 趁玩家读当前这一页时，预载下一段（或两个分支）的背景和插图
+    setTimeout(function () {
+      if (current === node) preloadAhead(node);
+    }, 450);
+  }
+
+  /* ---------------- 图片预加载 ---------------- */
+
+  function preloadImage(name) {
+    if (!name || preloadedImages.has(name)) return;
+    preloadedImages.add(name);
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = getUrl(name);
+  }
+
+  function preloadNodeAssets(node) {
+    if (!node) return;
+    if (node.bg) preloadImage(node.bg);
+    if (node.img) preloadImage(node.img);
+
+    if (node.speaker === 'player') {
+      const name = playerPortraitName();
+      if (name) preloadImage(name);
+    } else if (NPC_PORTRAITS[node.speaker]) {
+      const first = NPC_PORTRAITS[node.speaker][0];
+      if (first) preloadImage(first);
+    }
+
+    if (!node.bg && node.bgInherit === false) {
+      const mood = BS.moods.moodForNode(node);
+      const preset = story.bgByMood && story.bgByMood[mood];
+      if (preset && preset.src) preloadImage(preset.src);
+    }
+  }
+
+  function preloadAhead(node) {
+    const ids = [];
+    if (node.next) ids.push(node.next);
+    (node.choices || []).forEach(function (choice) {
+      if (choice.target) ids.push(choice.target);
+    });
+    ids.forEach(function (id) {
+      preloadNodeAssets(story.nodes[id]);
+    });
   }
 
   function resolveImage(node) {
@@ -439,6 +486,13 @@
 
     carouselSet(0, 0);
     els.hint.textContent = '左右切换，点猫猫或按钮确认 ›';
+
+    // 选角时把 7 只猫全部预载，切换时不再等图
+    setTimeout(function () {
+      options.forEach(function (option) {
+        if (option.img) preloadImage(option.img);
+      });
+    }, 250);
   }
   function makeArrow(text, label) {
     const btn = document.createElement('button');
